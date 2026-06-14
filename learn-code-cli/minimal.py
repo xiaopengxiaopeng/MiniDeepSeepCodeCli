@@ -1,53 +1,72 @@
 """
-minimal.py — the smallest possible coding agent
-================================================
-One loop. One tool (bash). ~50 lines. That's it.
+minimal.py — the smallest possible coding agent (REAL API)
+===========================================================
+One loop. One tool (bash). ~60 lines. With real DeepSeek API.
 
+Setup:  pip install openai python-dotenv
+        echo DEEPSEEK_API_KEY=sk-xxx > .env
 Run:    python minimal.py
-Type queries, see the agent call bash, loop until done.
 """
 
 import subprocess, json, os
+from openai import OpenAI
+from dotenv import load_dotenv
 
+load_dotenv()
 WORKDIR = os.getcwd()
 
-def llm(query, called):
-    """Mock LLM — returns {"content": "..."} or {"tool_calls": [...]}."""
-    q = query.lower()
-    if called:  # already ran a tool — stop
-        return {"content": "Output shown above."}
-    if "list" in q or "file" in q or "dir" in q:
-        cmd = "dir" if os.name == "nt" else "ls"
-        return {"tool_calls": [{"id": "t1", "function": {"name": "bash", "arguments": json.dumps({"cmd": cmd})}}]}
-    if "hi" in q or "hello" in q:
-        return {"content": "Hello! Try: list files"}
-    return {"tool_calls": [{"id": "t1", "function": {"name": "bash", "arguments": json.dumps({"cmd": query})}}]}
+client = OpenAI(
+    base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
+    api_key=os.getenv("DEEPSEEK_API_KEY"),
+)
+MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+
+TOOL_DEFS = [{"type": "function", "function": {
+    "name": "bash", "description": "Run a shell command.",
+    "parameters": {"type": "object", "properties": {"cmd": {"type": "string"}}, "required": ["cmd"]}
+}}]
+
+SYSTEM = f"You are a coding agent. Use bash to solve tasks at {WORKDIR}. Be concise."
 
 def bash(cmd):
     try:
-        r = subprocess.run(cmd, shell=True, cwd=WORKDIR, capture_output=True, text=True, timeout=10)
-        return (r.stdout + r.stderr).strip()[:3000] or "(no output)"
+        r = subprocess.run(cmd, shell=True, cwd=WORKDIR, capture_output=True, text=True, timeout=30)
+        return (r.stdout + r.stderr).strip()[:50000] or "(no output)"
     except: return "Error"
 
 TOOLS = {"bash": bash}
-print("Mini Agent (q to quit)\n")
+
+def llm(messages):
+    """Real DeepSeek API call — returns {"content": str} or {"tool_calls": [...]}"""
+    r = client.chat.completions.create(
+        model=MODEL, messages=messages, tools=TOOL_DEFS, temperature=0, max_tokens=8000
+    )
+    msg = r.choices[0].message
+    if msg.tool_calls:
+        return {"tool_calls": [{"id": t.id, "function": {"name": t.function.name, "arguments": t.function.arguments}} for t in msg.tool_calls]}
+    return {"content": msg.content or "Done."}
+
+print(f"DeepSeek Agent ({MODEL}) — q to quit\n")
 
 while True:
     q = input("> ").strip()
     if q.lower() in ("q", "exit", ""): break
-    messages = [{"role": "user", "content": q}]
+    messages = [
+        {"role": "system", "content": SYSTEM},
+        {"role": "user", "content": q}
+    ]
 
-    for _ in range(3):
-        called = any(m["role"] == "assistant" for m in messages)
-        r = llm(q, called)
+    for _ in range(10):
+        r = llm(messages)
         if "tool_calls" not in r:
-            print(r.get("content", ""))
-            messages.append({"role": "assistant", "content": r.get("content", "")})
+            print(r["content"])
+            messages.append({"role": "assistant", "content": r["content"]})
             break
         for tc in r["tool_calls"]:
             args = json.loads(tc["function"]["arguments"])
             out = TOOLS[tc["function"]["name"]](**args)
-            print(f"[bash] {args['cmd']}\n{out[:300]}")
-            messages.append({"role": "assistant", "tool_calls": r["tool_calls"]})
+            cmd = args.get("cmd", tc["function"]["name"])
+            print(f"[bash] {cmd}\n{out[:500]}")
+            messages.append({"role": "assistant", "tool_calls": [tc], "content": None})
             messages.append({"role": "tool", "tool_call_id": tc["id"], "content": out})
     print()
