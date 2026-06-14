@@ -150,27 +150,56 @@ In interactive mode:
 ## Project Structure
 
 ```
-src/
-  index.ts              # CLI entry (interactive + non-interactive modes)
-  agent.ts              # Core agent loop
-  api-client.ts         # DeepSeek API wrapper (OpenAI-compatible protocol)
-  tool-registry.ts      # Tool definitions and dispatch map
-  tools/
-    bash.ts             # Shell command execution
-    read-file.ts        # File reading (paginated)
-    write-file.ts       # File writing
-    edit-file.ts        # Exact string replacement
-    glob.ts             # Glob pattern matching
-    grep.ts             # Regex content search
-    todo-write.ts       # Task planning and tracking
-    task.ts             # Subagent spawning
-  harness/
-    hooks.ts            # Hook registration and triggering
-    compaction.ts       # Context compaction pipeline
-    memory.ts           # Persistent memory storage
-    system-prompt.ts    # Runtime prompt assembly
-    path-safety.ts      # Workspace boundary safety
+MiniDeepSeekCodeCli/
+  src/                    # TypeScript CLI source
+    index.ts              # CLI entry (interactive + non-interactive modes)
+    agent.ts              # Core agent loop
+    api-client.ts         # DeepSeek API wrapper (OpenAI-compatible protocol)
+    tool-registry.ts      # Tool definitions and dispatch map
+    tools/
+      bash.ts             # Shell command execution
+      read-file.ts        # File reading (paginated)
+      write-file.ts       # File writing
+      edit-file.ts        # Exact string replacement
+      glob.ts             # Glob pattern matching
+      grep.ts             # Regex content search
+      todo-write.ts       # Task planning and tracking
+      task.ts             # Subagent spawning
+    harness/
+      hooks.ts            # Hook registration and triggering
+      compaction.ts       # Context compaction pipeline
+      memory.ts           # Persistent memory storage
+      system-prompt.ts    # Runtime prompt assembly
+      path-safety.ts      # Workspace boundary safety
+  learn-code-cli/         # Progressive tutorial (C++ / Python / Java)
+    s01_agent_loop/       # Agent loop + bash
+    s02_tool_use/         # Multi-tool dispatch map
+    s03_permission/       # Permission pipeline
+    s04_todo_write/       # Task planning
+    s05_subagent/         # Subagent spawning
+    s06_context_compact/  # Context compaction
+    s07_error_recovery/   # Error recovery
+    s08_full_agent/       # Complete agent
 ```
+
+## Tutorial: Build Your Own Code CLI
+
+The `learn-code-cli/` directory is an 8-lesson progressive tutorial that extracts the fundamental patterns behind this project and teaches you to build your own coding agent from scratch — in **Python**, **C++**, and **Java**.
+
+Each lesson adds exactly one mechanism. Each mechanism has a motto.
+
+| # | Lesson | Motto | Key Concept |
+|---|--------|-------|-------------|
+| s01 | Agent Loop | "One loop & bash is all you need" | `while (tool_calls)` |
+| s02 | Tool Use | "Add a tool, add a handler" | Dispatch map |
+| s03 | Permission | "Set boundaries first, then grant freedom" | 3-gate pipeline |
+| s04 | Todo Write | "An agent without a plan drifts" | Task planning + nag |
+| s05 | Subagent | "Big tasks split small, clean context" | Context isolation |
+| s06 | Context Compact | "Context fills up — make room" | 3-layer compaction |
+| s07 | Error Recovery | "Errors start a retry" | Exponential backoff |
+| s08 | Full Agent | "Many mechanisms, one loop" | All combined |
+
+Start reading at [`learn-code-cli/README.md`](learn-code-cli/README.md).
 
 ## Design Principles
 
