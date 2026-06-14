@@ -1,141 +1,119 @@
-# DeepSeek Code CLI
+# Build Your Own Code CLI
 
-> An AI coding agent CLI purpose-built for DeepSeek
+> An 8-lesson progressive tutorial to build a coding agent CLI from scratch — with a production-grade TypeScript reference implementation for DeepSeek.
 
-An interactive terminal tool that turns DeepSeek into an AI-powered coding agent. It can read, write, and edit files, run shell commands, search codebases, manage tasks, spawn subagents — all driven by a core agent loop where DeepSeek autonomously decides which tools to call and when.
+Learning to build, not learning to copy. Every mechanism has a motto. Every lesson has Python, C++, and Java.
 
-Intelligence comes from the model. The harness gives it hands.
+Intelligence comes from the model. The harness gives it hands. This repo teaches you to build the hands.
 
-## Core Philosophy
+---
 
-```
-Intelligence ≠ Prompt Orchestration
+## Start Here: 8 Progressive Lessons
 
-True agent capability comes from model training, not from external code workflows.
-Drag-and-drop builders, no-code "AI Agent" platforms, prompt-chain libraries —
-these are essentially glue code with if-else branches. They are not agents.
+Each lesson adds exactly **one** harness mechanism. Read in order. Code in your language of choice.
 
-Agent Product = Model (Brain) + Harness (Hands)
+| # | Lesson | Motto | Key Concept |
+|---|--------|-------|-------------|
+| [s01](learn-code-cli/s01_agent_loop/) | Agent Loop | "One loop & bash is all you need" | `while (tool_calls)` / stop reason |
+| [s02](learn-code-cli/s02_tool_use/) | Tool Use | "Add a tool, add a handler" | Dispatch map / path safety |
+| [s03](learn-code-cli/s03_permission/) | Permission | "Set boundaries first, then grant freedom" | 3-gate deny → warn → confirm |
+| [s04](learn-code-cli/s04_todo_write/) | Todo Write | "An agent without a plan drifts" | Task list / nag reminders |
+| [s05](learn-code-cli/s05_subagent/) | Subagent | "Big tasks split small, clean context" | Context isolation / tool limits |
+| [s06](learn-code-cli/s06_context_compact/) | Context Compact | "Context fills up — make room" | snip → micro → budget |
+| [s07](learn-code-cli/s07_error_recovery/) | Error Recovery | "Errors start a retry" | Exponential backoff / reactive compact |
+| [s08](learn-code-cli/s08_full_agent/) | Full Agent | "Many mechanisms, one loop" | All 7 combined in one reference |
 
-The model handles perception, reasoning, and decision-making. The harness handles execution:
-  - Tools: file I/O, shell, search
-  - Knowledge: docs, style guides, API specs
-  - Observation: git diff, error logs, code state
-  - Permissions: sandboxing, approval flows, trust boundaries
-
-DeepSeek is the driver. This project is the vehicle.
-```
-
-## Architecture
+**Learning path:** act → handle complexity → remember → recover → assemble.
 
 ```
-                     Agent Loop
-                     ===========
-
-    User --> messages[] --> DeepSeek API --> response
-                                     |
-                           finish_reason == "tool_calls"?
-                          /                            \
-                        yes                             no
-                         |                               |
-                   execute tools                    return text
-                   append results
-                   loop back ------------------> messages[]
-
-    + context compaction pipeline (snip → micro → budget → auto)
-    + permission hooks (deny list + destructive warnings)
-    + todo task planning + nag reminders
-    + subagent spawning (clean context isolation)
-    + memory persistence and recall
-    + error recovery (429/503 retry + reactive compaction on context overflow)
+s01 ──→ s02 ──→ s03 ──→ s04 ──→ s05 ──→ s06 ──→ s07 ──→ s08
+loop    tools   perms   plan    spawn   compact  recover  full
 ```
 
-**The core pattern in 6 lines:**
+### How to Read
+
+Each lesson folder contains:
 
 ```
-while (finish_reason === "tool_calls") {
-    response = DeepSeek(messages, tools)
-    messages.push(assistant_message)
-    execute tools → collect results
-    messages.push(tool_results)
-}
+s01_agent_loop/
+  README.md          # Chinese tutorial (full narrative + inline code)
+  README.en.md       # English tutorial
+  python/code.py     # Python 3.x — runnable with mock LLM
+  cpp/main.cpp       # C++17 — compilable single file
+  java/Main.java     # Java 17 — compilable single file
 ```
 
-Every new feature layers on top of the loop. The loop itself never changes.
+1. Open the lesson README — understand the concept and the motto
+2. Read the code — every section is labeled (`FROM s01`, `NEW in s02`)
+3. Run it: `python code.py` / `g++ -std=c++17 main.cpp && ./a.out` / `javac Main.java && java Main`
 
-## Quick Start
+All implementations use a **mock LLM** — no API key needed. The loop is real. The tools are real. Only the model response is simulated so you can see every mechanism in action instantly.
 
-### Prerequisites
+### The Core Pattern
 
-- Node.js 18+
-- [DeepSeek API Key](https://platform.deepseek.com/api_keys)
+No matter the language, no matter the mechanism — the agent loop never exceeds 10 lines:
 
-### Install
+```
+while (finish_reason == "tool_calls"):
+    response = LLM(messages, tools)
+    messages.append(assistant_msg)
+    for tc in response.tool_calls:
+        result = TOOL_HANDLERS[tc.name](**tc.args)
+        messages.append(tool_result(tc.id, result))
+```
+
+Every lesson layers one more mechanism on top. The loop itself is untouchable.
+
+---
+
+## Reference Implementation: DeepSeek Code CLI
+
+The `src/` directory contains a **production-grade TypeScript CLI** that connects to the real DeepSeek API with all 7 mechanisms active. It's what the tutorial teaches you to build.
+
+```
+src/
+  index.ts              # CLI entry (interactive + non-interactive modes)
+  agent.ts              # Core agent loop with streaming
+  api-client.ts         # DeepSeek API wrapper (OpenAI-compatible)
+  tool-registry.ts      # Tool definitions + dispatch map
+  tools/
+    bash.ts             # Shell execution (blocked: rm -rf /, sudo, ...)
+    read-file.ts        # File reading with offset/limit
+    write-file.ts       # File writing with mkdir -p
+    edit-file.ts        # Exact string replace + replaceAll
+    glob.ts             # Glob pattern matching, sorted by mtime
+    grep.ts             # Regex content search with file filters
+    todo-write.ts       # Task planning with status tracking
+    task.ts             # Subagent spawning with clean context
+  harness/
+    hooks.ts            # PreToolUse / PostToolUse / Stop hooks
+    compaction.ts       # 4-layer compaction pipeline
+    memory.ts           # Disk-persisted keyword-matching memory
+    system-prompt.ts    # Runtime prompt section assembly
+    path-safety.ts      # Workspace boundary enforcement
+```
+
+### Quick Start (Reference CLI)
 
 ```bash
-git clone <your-repo-url>
-cd deepseek-code-cli
-npm install
-npm run build
-```
+git clone https://github.com/xiaopengxiaopeng/MiniDeepSeepCodeCli.git
+cd MiniDeepSeepCodeCli
+npm install && npm run build
 
-### Configure
+# Set your API key
+echo "DEEPSEEK_API_KEY=sk-your-key" > .env
 
-Create a `.env` file:
-
-```env
-DEEPSEEK_API_KEY=sk-your-api-key-here
-DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
-DEEPSEEK_MODEL=deepseek-chat
-MAX_TOKENS=8000
-CONTEXT_LIMIT=50000
-```
-
-### Run
-
-```bash
 # Interactive mode
 npm start
 
-# Single query (non-interactive)
-npm start "What files are in src/?"
+# Single query
+npm start "Explain the codebase structure"
 
-# Custom workspace
-npm start -- --workdir=/path/to/project "Explain the architecture"
-
-# Development mode (hot-reload with tsx)
+# Development
 npm run dev
 ```
 
-## Features
-
-### Tools
-
-| Tool | Description |
-|------|-------------|
-| `bash` | Execute shell commands in workspace |
-| `read_file` | Read file contents with offset/limit pagination |
-| `write_file` | Create or overwrite files |
-| `edit_file` | Precise string replacement with replaceAll support |
-| `glob` | Find files by glob pattern, sorted by modification time |
-| `grep` | Search file contents with regex patterns |
-| `todo_write` | Plan and track multi-step tasks |
-| `task` | Spawn subagents for complex subtasks |
-| `compact` | Compact conversation history to free context space |
-
-### Harness Components
-
-- **Permission Pipeline (3 gates)** — Hard deny list → destructive command detection → workspace boundary enforcement
-- **Hook System** — PreToolUse / PostToolUse / Stop / UserPromptSubmit extension points
-- **Context Compaction (4 layers)** — toolResultBudget → snipCompact → microCompact → autoCompact (from 0 API calls to LLM summary, escalating gradually)
-- **Todo Tracking** — Plan-then-execute workflow with auto-nag after 3 rounds without updates
-- **Subagent System** — Independent context for complex side tasks, returns only the final conclusion
-- **Memory System** — Disk-persisted storage with keyword-matching recall
-- **Error Recovery** — 429 (rate limit) exponential backoff, 503 (overloaded) backoff, reactive compaction on context-length errors
-
-### Commands
-
-In interactive mode:
+### Commands (Interactive Mode)
 
 | Command | Description |
 |---------|-------------|
@@ -147,71 +125,33 @@ In interactive mode:
 | `/model` | Show current model info |
 | `/workspace` | Show workspace directory |
 
-## Project Structure
+### Tools Reference
 
-```
-MiniDeepSeekCodeCli/
-  src/                    # TypeScript CLI source
-    index.ts              # CLI entry (interactive + non-interactive modes)
-    agent.ts              # Core agent loop
-    api-client.ts         # DeepSeek API wrapper (OpenAI-compatible protocol)
-    tool-registry.ts      # Tool definitions and dispatch map
-    tools/
-      bash.ts             # Shell command execution
-      read-file.ts        # File reading (paginated)
-      write-file.ts       # File writing
-      edit-file.ts        # Exact string replacement
-      glob.ts             # Glob pattern matching
-      grep.ts             # Regex content search
-      todo-write.ts       # Task planning and tracking
-      task.ts             # Subagent spawning
-    harness/
-      hooks.ts            # Hook registration and triggering
-      compaction.ts       # Context compaction pipeline
-      memory.ts           # Persistent memory storage
-      system-prompt.ts    # Runtime prompt assembly
-      path-safety.ts      # Workspace boundary safety
-  learn-code-cli/         # Progressive tutorial (C++ / Python / Java)
-    s01_agent_loop/       # Agent loop + bash
-    s02_tool_use/         # Multi-tool dispatch map
-    s03_permission/       # Permission pipeline
-    s04_todo_write/       # Task planning
-    s05_subagent/         # Subagent spawning
-    s06_context_compact/  # Context compaction
-    s07_error_recovery/   # Error recovery
-    s08_full_agent/       # Complete agent
-```
+| Tool | What it does |
+|------|-------------|
+| `bash` | Execute shell commands in workspace |
+| `read_file` | Read files with `path`, `offset`, `limit` |
+| `write_file` | Create or overwrite files |
+| `edit_file` | Replace `old_string` with `new_string` (supports `replace_all`) |
+| `glob` | Find files by pattern, sorted by modification time |
+| `grep` | Search with regex, filter by `include` pattern |
+| `todo_write` | Create/update task list: `[{content, status}]` |
+| `task` | Spawn subagent for complex subtasks |
+| `compact` | Compress conversation history |
 
-## Tutorial: Build Your Own Code CLI
-
-The `learn-code-cli/` directory is an 8-lesson progressive tutorial that extracts the fundamental patterns behind this project and teaches you to build your own coding agent from scratch — in **Python**, **C++**, and **Java**.
-
-Each lesson adds exactly one mechanism. Each mechanism has a motto.
-
-| # | Lesson | Motto | Key Concept |
-|---|--------|-------|-------------|
-| s01 | Agent Loop | "One loop & bash is all you need" | `while (tool_calls)` |
-| s02 | Tool Use | "Add a tool, add a handler" | Dispatch map |
-| s03 | Permission | "Set boundaries first, then grant freedom" | 3-gate pipeline |
-| s04 | Todo Write | "An agent without a plan drifts" | Task planning + nag |
-| s05 | Subagent | "Big tasks split small, clean context" | Context isolation |
-| s06 | Context Compact | "Context fills up — make room" | 3-layer compaction |
-| s07 | Error Recovery | "Errors start a retry" | Exponential backoff |
-| s08 | Full Agent | "Many mechanisms, one loop" | All combined |
-
-Start reading at [`learn-code-cli/README.md`](learn-code-cli/README.md).
+---
 
 ## Design Principles
 
-1. **The model decides, the harness executes** — DeepSeek chooses which tools to call and when; the harness only carries out those decisions.
+1. **The model decides, the harness executes** — The LLM chooses tools; the harness carries out those decisions. Never the reverse.
 
-2. **One loop, many mechanisms** — The core agent loop never changes. Tools, permissions, hooks, compaction all layer on top without touching the loop.
+2. **One loop, many mechanisms** — Tools, permissions, hooks, compaction all layer around the same `while (tool_calls)` loop.
 
-3. **Cheap first, expensive last** — Compaction starts with zero API calls (budget → snip → micro), only falling back to LLM-summarized auto-compact when necessary.
+3. **Cheap first, expensive last** — Compaction runs budget → snip → micro (zero API calls) before falling back to LLM summarization.
 
-4. **Add a tool, add a handler** — New tools register into the dispatch map; the loop stays untouched.
+4. **Add a tool, add a handler** — New tools register into the dispatch map. The loop never changes.
 
-5. **Ask before breaking** — Destructive operations must pass through the permission pipeline; safety boundaries are part of the design, not an afterthought.
+5. **Ask before breaking** — Destructive operations must pass through the permission pipeline. Safety is design, not afterthought.
 
 ## License
 
